@@ -7,7 +7,7 @@ var gl = null,
  */
 function init(resources) {
   //create a GL context
-  gl = createContext(400 /*width*/, 400 /*height*/);
+  gl = createContext(800 /*width*/, 600 /*height*/);
 
   //compile and link shader program
   program = createProgram(gl, resources.vs, resources.fs);
