@@ -1,11 +1,43 @@
 //the OpenGL context
 var gl = null,
-    program = null;
+    program = null,
+    posAttLocation = null;
 
+//Buffer
+var positionBuffer = null;
+
+//attributes
+var posAttLocation = null;
+
+//uniforms
+var colorUniformLocation = null,
+    resolutionUniformLocation = null;
+
+var testRectanglePos = [
+    -0.8, -0.8,
+    0.8, -0.8,
+    0.8, 0.8,
+    -0.8, -0.8,
+    -0.8, 0.8,
+    0.8, 0.8,
+];
+
+var testRectangleTranslation = {
+  tranlsation: [0, 0],
+  width: 100,
+  height: 30,
+  color: [Math.random(), Math.random(), Math.random(), 1]
+};
+
+var testTrianglePos = [
+  0, 0,
+  0, 0.5,
+  0.7, 0,
+];
 
 loadResources({
-    basic_vs: 'shader/basic.vs.glsl',
-    basic_fs: 'shader/basic.vs.glsl',
+    basic_vs: 'shader/basic2d.vs.glsl',
+    basic_fs: 'shader/basic.fs.glsl',
     jupiter_c: 'models/jupiter-c.obj'
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);
@@ -14,6 +46,11 @@ loadResources({
   render();
 });
 
+
+//  ===================================================================
+//  * Dedending on how many attributes/uniforms/varyings and what not *
+//  * We should consider using a seperate file for our const names    *
+//  ===================================================================
 /**
  * initializes OpenGL context, compile shader, and load buffers
  */
@@ -23,6 +60,20 @@ function init(resources) {
 
   //compile and link shader program
   program = createProgram(gl, resources.basic_vs, resources.basic_fs);
+
+  //Getting attributes
+  posAttLocation = gl.getAttribLocation(program, 'a_position');
+
+  //Geetings Uniforms
+  colorUniformLocation = gl.getUniformLocation(program, 'u_color');
+  resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+
+  positionBuffer = gl.createBuffer();
+
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(testRectanglePos), gl.STATIC_DRAW);
+
+
   initInteraction(gl.canvas);
 }
 
@@ -30,15 +81,60 @@ function init(resources) {
  * render one frame
  */
 function render() {
+  checkForWindowResize(gl);
 
-  gl.clearColor(0.9, 0.5, 0.5, 1.0);
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  gl.clearColor(0.9, 0.5, 0.9, 1.0);
   //clear the buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  //TODO
+  gl.useProgram(program);
 
-  //request another call as soon as possible
-  //requestAnimationFrame(render);
+
+  gl.uniform4f(colorUniformLocation, 0.5, 0.2, 1, 1);
+  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+  // setRectangle(gl, Math.random(),Math.random(),Math.random());
+
+  // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(
+  //   0,0,
+  //   1,0,
+  //   1,1,
+  //   0,0,
+  //   0,1,
+  //   1,1), gl.STATIC_DRAW);
+
+  //  ====== In case we need this Attribute again ======
+  gl.enableVertexAttribArray(posAttLocation);
+  gl.vertexAttribPointer(posAttLocation, 2, gl.FLOAT, false, 0, 0);
+  //  ===================================================
+
+  setRectangle(gl,
+    testRectangleTranslation.tranlsation[0],
+    testRectangleTranslation.tranlsation[1],
+    testRectangleTranslation.width,
+    testRectangleTranslation.height);
+
+  gl.uniform4f(colorUniformLocation,
+    testRectangleTranslation.color[0],
+    testRectangleTranslation.color[1],
+    testRectangleTranslation.color[2],
+    testRectangleTranslation.color[3]);
+
+  gl.drawArrays(gl.TRIANGLES, 0, 6);
+
+// randomized rectangles
+ for(var i = 0; i < 10; i++){
+   setRectangle(gl, randomInt(300), randomInt(300), randomInt(300), randomInt(300));
+   gl.uniform4f(colorUniformLocation,
+     Math.random(),
+     Math.random(),
+     Math.random(),
+     1);
+
+     gl.drawArrays(gl.TRIANGLES, 0, 6);
+ }
+
 }
 
 
