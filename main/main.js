@@ -94,6 +94,12 @@ function render() {
 
 
   var matrix = mat3.create();
+  var projectionMatrix = [
+    2 / gl.canvas.clientWidth, 0 , 0,
+    0, -2 / gl.canvas.clientHeight, 0,
+    -1 , 1, 1,
+  ]
+  mat3.multiply(matrix, matrix, projectionMatrix);
   mat3.translate(matrix, matrix, [400, 300]);
   mat3.rotate(matrix, matrix, glMatrix.toRadian(-90));
   mat3.translate(matrix, matrix, [-50, -75]);
@@ -102,7 +108,10 @@ function render() {
 
   count = 18;
   gl.drawArrays(primitiveType, offset, count);
+
+
   matrix = mat3.create();
+  mat3.multiply(matrix, matrix, projectionMatrix);
   mat3.translate(matrix, matrix, [translation[0], translation[1]]);
   console.log('Matrix after translation: ' + matrix);
   mat3.rotate(matrix, matrix, glMatrix.toRadian(rotation[0]));
@@ -122,13 +131,6 @@ function render() {
     count = 18;
     gl.drawArrays(primitiveType, offset, count);
   }
-  setRectangle(gl, translation[0] + 300, translation[1] + 200, randomInt(800), randomInt(600));
-  gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
-
-
-  gl.drawArrays(primitiveType, offset, count);
-
-
 }
 
 
