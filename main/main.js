@@ -6,14 +6,22 @@ var gl = null,
 var positionAttLocation;
 
 //uniforms
-var colorUniformLocation;
+var colorUniformLocation,
+  resolutionUniformLocation,
+  matrixUniformLocation;
 
 //buffer
 var positionBuffer;
 
+//basic transformations
+var translation = [100, 150, 0];
+
+var rotation = [-90, 0, 0];
+var scale = [0.8, 0.8, 1];
+
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',
-    basic_fs: 'shader/basic.vs.glsl',
+    basic_fs: 'shader/basic.fs.glsl',
     jupiter_c: 'models/jupiter-c.obj'
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);
@@ -31,7 +39,23 @@ function init(resources) {
 
   //compile and link shader program
   program = createProgram(gl, resources.basic_vs, resources.basic_fs);
+
+  positionAttLocation = gl.getAttribLocation(program, 'a_position');
+  colorUniformLocation = gl.getUniformLocation(program, 'u_color');
+  resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
+  matrixUniformLocation = gl.getUniformLocation(program, 'u_matrix');
+
+  positionBuffer = gl.createBuffer();
+
   initInteraction(gl.canvas);
+}
+
+
+function randomInt(value){
+  if(typeof value === 'number' && value > 0){
+      return Math.random()*value;
+  }
+  return 0;
 }
 
 /**
@@ -39,14 +63,72 @@ function init(resources) {
  */
 function render() {
 
-  gl.clearColor(0.9, 0.5, 0.5, 1.0);
+  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+
+  gl.clearColor(0.8, 0.8, 0.8, 1.0);
   //clear the buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  //TODO
+  gl.useProgram(program);
 
-  //request another call as soon as possible
-  //requestAnimationFrame(render);
+  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
+  gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
+
+  gl.enableVertexAttribArray(positionAttLocation);
+
+  // Bind the position buffer.
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+
+  // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
+  var size = 2;          // 2 components per iteration
+  var type = gl.FLOAT;   // the data is 32bit floats
+  var normalize = false; // don't normalize the data
+  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
+  var offset = 0;        // start at the beginning of the buffer
+  gl.vertexAttribPointer(
+      positionAttLocation, size, type, normalize, stride, offset);
+
+  var primitiveType = gl.TRIANGLES;
+  var offset = 0;
+  var count = 6;
+
+
+  var matrix = mat3.create();
+  mat3.translate(matrix, matrix, [400, 300]);
+  mat3.rotate(matrix, matrix, glMatrix.toRadian(-90));
+  mat3.translate(matrix, matrix, [-50, -75]);
+  gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
+  setGeometry(gl, F_FIGURE_2D);
+
+  count = 18;
+  gl.drawArrays(primitiveType, offset, count);
+  matrix = mat3.create();
+  mat3.translate(matrix, matrix, [translation[0], translation[1]]);
+  console.log('Matrix after translation: ' + matrix);
+  mat3.rotate(matrix, matrix, glMatrix.toRadian(rotation[0]));
+  console.log('Matrix after rotation: ' + matrix);
+  mat3.scale(matrix, matrix, [scale[0], scale[1]]);
+  mat3.translate(matrix, matrix, [-50, -75]);
+  console.log('Matrix after scaling: ' + matrix);
+  gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
+  for(var i = 0; i < 5; i++){
+    mat3.translate(matrix, matrix, [translation[0], translation[1]]);
+    mat3.rotate(matrix, matrix, glMatrix.toRadian(rotation[0]));
+    mat3.scale(matrix, matrix, [scale[0], scale[1]]);
+    gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
+    gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
+    setGeometry(gl, F_FIGURE_2D);
+
+    count = 18;
+    gl.drawArrays(primitiveType, offset, count);
+  }
+  setRectangle(gl, translation[0] + 300, translation[1] + 200, randomInt(800), randomInt(600));
+  gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
+
+
+  gl.drawArrays(primitiveType, offset, count);
+
+
 }
 
 

@@ -4,7 +4,7 @@
 
 //need to specify how "precise" float should be
 precision mediump float;
-vec4 u_color;
+uniform vec4 u_color;
 
 //entry point again
 void main() {
