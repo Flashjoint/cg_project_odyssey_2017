@@ -2,6 +2,14 @@
 var gl = null,
     program = null;
 
+// attributes
+var positionAttLocation;
+
+//uniforms
+var colorUniformLocation;
+
+//buffer
+var positionBuffer;
 
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',

@@ -4,8 +4,9 @@
 
 //need to specify how "precise" float should be
 precision mediump float;
+vec4 u_color;
 
 //entry point again
 void main() {
-  gl_FragColor = vec4(1,1,1,1);
+  gl_FragColor = u_color;
 }
