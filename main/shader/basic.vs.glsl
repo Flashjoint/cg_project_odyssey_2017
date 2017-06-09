@@ -3,14 +3,18 @@
  */
 
 // attribute vec4 a_position;
-attribute vec2 a_position;
+attribute vec4 a_position;
+attribute vec4 a_color;
 
-uniform vec2 u_resolution;
-
-uniform mat3 u_matrix;
+uniform mat4 u_matrix;
+uniform float u_fudgeFactor;
+varying vec4 v_color;
 
 //like a C program main is the main function
 void main() {
+    vec4 position = u_matrix * a_position;
 
-    gl_Position = vec4((u_matrix * vec3(a_position, 1)).xy, 0, 1);
+
+    gl_Position = position;
+    // v_color = a_color;
 }

@@ -8,16 +8,31 @@ var positionAttLocation;
 //uniforms
 var colorUniformLocation,
   resolutionUniformLocation,
-  matrixUniformLocation;
+  matrixUniformLocation,
+  fudgeFactorUniformLocation;
 
 //buffer
-var positionBuffer;
+var positionBuffer,
+  colorBuffer;
 
 //basic transformations
-var translation = [100, 150, 0];
+var translation = [100, -100, -500];
 
-var rotation = [-90, 0, 0];
+var rotation = [-45, 45, 45];
 var scale = [0.8, 0.8, 1];
+
+
+var matrix, camera;
+var fudgeFactor = 1;
+
+var cubeColorMatrix = [
+  [0, 0.392157, 0, 1], //green, front
+  [1, 1, 1, 1], // black, right
+  [0, 0, 0, 1], //white, left
+  [0.545098, 0, 0, 1], //red, top
+  [1, 0.843137, 0, 1], //yellow, bottom
+  [0, 0, 1, 1] //blue, back
+]
 
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',
@@ -40,12 +55,20 @@ function init(resources) {
   //compile and link shader program
   program = createProgram(gl, resources.basic_vs, resources.basic_fs);
 
+  gl.enable(gl.CULL_FACE);
+  gl.enable(gl.DEPTH_TEST);
+
   positionAttLocation = gl.getAttribLocation(program, 'a_position');
   colorUniformLocation = gl.getUniformLocation(program, 'u_color');
   resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
   matrixUniformLocation = gl.getUniformLocation(program, 'u_matrix');
+  fudgeFactorUniformLocation = gl.getUniformLocation(program, 'u_fudgeFactor');
 
   positionBuffer = gl.createBuffer();
+
+  // Bind the position buffer.
+  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
+  setGeometry(gl, QUAD_FIGURE_3D);
 
   initInteraction(gl.canvas);
 }
@@ -61,8 +84,7 @@ function randomInt(value){
 /**
  * render one frame
  */
-function render() {
-
+function render(timeInMilliseconds) {
   gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
 
   gl.clearColor(0.8, 0.8, 0.8, 1.0);
@@ -76,11 +98,9 @@ function render() {
 
   gl.enableVertexAttribArray(positionAttLocation);
 
-  // Bind the position buffer.
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
 
   // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-  var size = 2;          // 2 components per iteration
+  var size = 3;          // 2 components per iteration
   var type = gl.FLOAT;   // the data is 32bit floats
   var normalize = false; // don't normalize the data
   var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
@@ -93,43 +113,51 @@ function render() {
   var count = 6;
 
 
-  var matrix = mat3.create();
-  var projectionMatrix = [
-    2 / gl.canvas.clientWidth, 0 , 0,
-    0, -2 / gl.canvas.clientHeight, 0,
-    -1 , 1, 1,
-  ]
-  mat3.multiply(matrix, matrix, projectionMatrix);
-  mat3.translate(matrix, matrix, [400, 300]);
-  mat3.rotate(matrix, matrix, glMatrix.toRadian(-90));
-  mat3.translate(matrix, matrix, [-50, -75]);
-  gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
-  setGeometry(gl, F_FIGURE_2D);
+  matrix = mat4.create();
+  camera = mat4.create();
 
-  count = 18;
-  gl.drawArrays(primitiveType, offset, count);
+  var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
+  var numFs = 5;
+  var radius = 200;
 
+  mat4.fromYRotation(camera, glMatrix.toRadian(radius));
+  mat4.translate(camera, camera, [0,0, radius * 1.5]);
+  var viewMatrix = mat4.create();
 
-  matrix = mat3.create();
-  mat3.multiply(matrix, matrix, projectionMatrix);
-  mat3.translate(matrix, matrix, [translation[0], translation[1]]);
-  console.log('Matrix after translation: ' + matrix);
-  mat3.rotate(matrix, matrix, glMatrix.toRadian(rotation[0]));
-  console.log('Matrix after rotation: ' + matrix);
-  mat3.scale(matrix, matrix, [scale[0], scale[1]]);
-  mat3.translate(matrix, matrix, [-50, -75]);
-  console.log('Matrix after scaling: ' + matrix);
-  gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
-  for(var i = 0; i < 5; i++){
-    mat3.translate(matrix, matrix, [translation[0], translation[1]]);
-    mat3.rotate(matrix, matrix, glMatrix.toRadian(rotation[0]));
-    mat3.scale(matrix, matrix, [scale[0], scale[1]]);
-    gl.uniformMatrix3fv(matrixUniformLocation, false, matrix);
-    gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
-    setGeometry(gl, F_FIGURE_2D);
+  mat4.invert(viewMatrix, camera);
 
-    count = 18;
-    gl.drawArrays(primitiveType, offset, count);
+  mat4.perspective(matrix, glMatrix.toRadian(45), aspect, 1, 2000);
+
+  mat4.translate(matrix, matrix, [translation[0], translation[1], translation[2]]);
+  var viewProjectionMatrix = mat4.create();
+
+  mat4.multiply(viewProjectionMatrix, matrix, viewMatrix);
+  //
+  // var depth = 400;
+  // var orthographicMatrix = mat4.create();
+  //
+  // mat4.ortho(orthographicMatrix, 0, gl.canvas.clientWidth, gl.canvas.clientHeight, 0, -400, 400);
+  //
+  // mat4.multiply(matrix, matrix, orthographicMatrix);
+
+  // mat4.rotateX(matrix, matrix, glMatrix.toRadian(rotation[0]));
+  // mat4.rotateY(matrix, matrix, glMatrix.toRadian(rotation[1]));
+  // mat4.rotateZ(matrix, matrix, glMatrix.toRadian(rotation[2]));
+  // mat4.translate(matrix, matrix, [-50, -50, -50]);
+  for(var ii = 0; ii < numFs; ii++){
+    var angle = ii * Math.PI * 2 / numFs;
+    var x = Math.cos(angle) * radius;
+    var y = Math.sin(angle) * radius;
+
+    mat4.translate(matrix, viewProjectionMatrix, [x, 0, y]);
+
+    gl.uniformMatrix4fv(matrixUniformLocation, false, matrix);
+    count = 6;
+    for(var i = 0; i < 6; i++){
+      gl.uniform1f(fudgeFactorUniformLocation, fudgeFactor);
+      gl.uniform4f(colorUniformLocation, cubeColorMatrix[i][0], cubeColorMatrix[i][1], cubeColorMatrix[i][2], cubeColorMatrix[i][3]);
+      gl.drawArrays(primitiveType, offset + (i * count), count);
+    }
   }
 }
 
