@@ -17,14 +17,21 @@ var positionBuffer,
 
 //basic transformations
 var translation = [-0.01, 0, 0];
-
 var rotation = [-45, 45, 45];
 var scale = [0.8, 0.8, 1];
 
 
-var matrix, camera;
-var zNear = 1, zFar = 2000;
+//global matrices and matrix properties
+var matrix;
+var zNear = 0.01, zFar = 600;
 var fudgeFactor = 1;
+var zoom = 0.0;
+var camera = {
+  rotation: {
+    x: 0,
+    y: 0
+  }
+};
 
 var rotationTimer = 0;
 
@@ -39,9 +46,16 @@ var cubeColorMatrix = [
 
 var customSphere;
 
+//root of the scenegraph
+var sceneGraph_root;
+
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',
     basic_fs: 'shader/basic.fs.glsl',
+    phong_vs: 'shader/basic.vs.glsl',
+    phong_fs: 'shader/basic.fs.glsl',
+    single_vs: 'shader/single.vs.glsl',
+    single_fs: 'shader/single.fs.glsl',
     jupiter_c: 'models/jupiter-c.obj'
 }).then(function (resources /*an object containing our keys with the loaded resources*/) {
   init(resources);
@@ -58,24 +72,13 @@ function init(resources) {
   gl = createContext(800 /*width*/, 600 /*height*/);
 
   //compile and link shader program
-  program = createProgram(gl, resources.basic_vs, resources.basic_fs);
+  // program = createProgram(gl, resources.single_vs, resources.single_fs);
 
-  gl.enable(gl.CULL_FACE);
+  // gl.enable(gl.CULL_FACE);
   gl.enable(gl.DEPTH_TEST);
 
-  positionAttLocation = gl.getAttribLocation(program, 'a_position');
-  colorUniformLocation = gl.getUniformLocation(program, 'u_color');
-  resolutionUniformLocation = gl.getUniformLocation(program, 'u_resolution');
-  matrixUniformLocation = gl.getUniformLocation(program, 'u_matrix');
-  fudgeFactorUniformLocation = gl.getUniformLocation(program, 'u_fudgeFactor');
 
-  positionBuffer = gl.createBuffer();
-
-  // Bind the position buffer.
-  gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
-  setGeometry(gl, QUAD_FIGURE_3D);
-  // customSphere = makeSphere(200, 10, 10);
-  // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(customSphere.position), gl.STATIC_DRAW);
+  sceneGraph_root = createSceneGraph(gl, resources);
 
   initInteraction(gl.canvas);
 }
@@ -85,72 +88,31 @@ function init(resources) {
  * render one frame
  */
 function render(timeInMilliseconds) {
-  gl.viewport(0, 0, gl.canvas.width, gl.canvas.height);
+  checkForWindowResize(gl);
+  gl.viewport(0, 0, gl.drawingBufferWidth, gl.drawingBufferHeight);
 
   gl.clearColor(0.8, 0.8, 0.8, 1.0);
   //clear the buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  gl.useProgram(program);
+  // gl.useProgram(program);
 
-  gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-  // gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
-  gl.uniform4f(colorUniformLocation, 0.8, 0.5, 0.3, 1);
+  const sceneGraph_context = createSGContext(gl);
 
-  gl.enableVertexAttribArray(positionAttLocation);
+  //Creating and setting projectionMatrix (thats the Fulcrum-look-alike cone defining at what point objects are being cut off)
+  sceneGraph_context.projectionMatrix = mat4.perspective(mat4.create(), glMatrix.toRadian(45), gl.drawingBufferWidth / gl.drawingBufferHeight, zNear, zFar);
 
-
-  // Tell the attribute how to get data out of positionBuffer (ARRAY_BUFFER)
-  var size = 3;          // 2 components per iteration
-  var type = gl.FLOAT;   // the data is 32bit floats
-  var normalize = false; // don't normalize the data
-  var stride = 0;        // 0 = move forward size * sizeof(type) each iteration to get the next position
-  var offset = 0;        // start at the beginning of the buffer
-  gl.vertexAttribPointer(
-      positionAttLocation, size, type, normalize, stride, offset);
-
-  var primitiveType = gl.TRIANGLES;
-  var offset = 0;
-  var count = 6;
+  //creating and setting viewMatrix (basically thats the direction we want to look)
+  sceneGraph_context.viewMatrix = mat4.lookAt(mat4.create(), [0,1,-10], [0,0,0], [0,1,0]);
 
 
-  matrix = mat4.create();
-  camera = mat4.create();
+  var cameraMatrix = mat4.create();
+  mat4.multiply(cameraMatrix, glm.rotateY(camera.rotation.x), glm.rotateX(camera.rotation.y));
+  mat4.translate(cameraMatrix, cameraMatrix, [0,0,zoom/100]);
+  sceneGraph_context.sceneMatrix = cameraMatrix;
 
-  var aspect = gl.canvas.clientWidth / gl.canvas.clientHeight;
-  var numFs = 5;
-  var radius = 200;
 
-  // timeInMilliseconds *= 0.001;
-  var deltaTime = timeInMilliseconds - rotationTimer;
-
-  rotationTimer = timeInMilliseconds;
-  rotation[1] += (0.1 * deltaTime);
-  mat4.fromYRotation(camera, glMatrix.toRadian(rotation[1]));
-  mat4.translate(camera, camera, [0,0, 1500]);
-  var viewMatrix = mat4.create();
-
-  mat4.invert(viewMatrix, camera);
-
-  // mat4.rotateX(matrix, matrix, glMatrix.toRadian(rotation[1]));
-  // console.log('Modellmatrix: ' + matrix);
-  mat4.translate(matrix, matrix, [translation[0], translation[1], translation[2]]);
-  var perspectiveMatrix = mat4.create();
-  mat4.perspective(perspectiveMatrix, glMatrix.toRadian(30), aspect, zNear, zFar);
-  mat4.multiply(matrix, matrix, perspectiveMatrix);
-
-  var viewProjectionMatrix = mat4.create();
-
-  mat4.multiply(viewProjectionMatrix, matrix, viewMatrix);
-
-  gl.uniformMatrix4fv(matrixUniformLocation, false, viewProjectionMatrix);
-  count = 6;
-  for(var i = 0; i < 6; i++){
-    gl.uniform1f(fudgeFactorUniformLocation, fudgeFactor);
-    gl.uniform4f(colorUniformLocation, cubeColorMatrix[i][0], cubeColorMatrix[i][1], cubeColorMatrix[i][2], cubeColorMatrix[i][3]);
-    gl.drawArrays(primitiveType, offset + (i * count), count);
-  }
-
+  sceneGraph_root.render(sceneGraph_context);
   // gl.drawArrays(primitiveType, 0, customSphere.position.length / 3);
 
   requestAnimationFrame(render);
@@ -188,6 +150,11 @@ function initInteraction(canvas) {
   canvas.addEventListener('mouseup', function(event) {
     mouse.pos = toPos(event);
     mouse.leftButtonDown = false;
+  });
+  canvas.addEventListener('wheel', function(event){
+    // console.log('Somethings happening', event);
+    zoom += event.deltaY;
+    // console.log('Current zoom-level: ' + zoom);
   });
   //register globally
   document.addEventListener('keypress', function(event) {
