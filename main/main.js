@@ -52,8 +52,8 @@ var sceneGraph_root;
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',
     basic_fs: 'shader/basic.fs.glsl',
-    phong_vs: 'shader/basic.vs.glsl',
-    phong_fs: 'shader/basic.fs.glsl',
+    phong_vs: 'shader/phong.vs.glsl',
+    phong_fs: 'shader/phong.fs.glsl',
     single_vs: 'shader/single.vs.glsl',
     single_fs: 'shader/single.fs.glsl',
     jupiter_c: 'models/jupiter-c.obj'
@@ -61,7 +61,7 @@ loadResources({
   init(resources);
 
   //render one frame
-  requestAnimationFrame(render);
+  render(0);
 });
 
 /**
@@ -82,6 +82,8 @@ function init(resources) {
 
   initInteraction(gl.canvas);
 }
+
+
 
 
 /**
