@@ -16,14 +16,17 @@ var positionBuffer,
   colorBuffer;
 
 //basic transformations
-var translation = [100, -100, -500];
+var translation = [-0.01, 0, 0];
 
 var rotation = [-45, 45, 45];
 var scale = [0.8, 0.8, 1];
 
 
 var matrix, camera;
+var zNear = 1, zFar = 2000;
 var fudgeFactor = 1;
+
+var rotationTimer = 0;
 
 var cubeColorMatrix = [
   [0, 0.392157, 0, 1], //green, front
@@ -32,7 +35,9 @@ var cubeColorMatrix = [
   [0.545098, 0, 0, 1], //red, top
   [1, 0.843137, 0, 1], //yellow, bottom
   [0, 0, 1, 1] //blue, back
-]
+];
+
+var customSphere;
 
 loadResources({
     basic_vs: 'shader/basic.vs.glsl',
@@ -42,7 +47,7 @@ loadResources({
   init(resources);
 
   //render one frame
-  render();
+  requestAnimationFrame(render);
 });
 
 /**
@@ -69,17 +74,12 @@ function init(resources) {
   // Bind the position buffer.
   gl.bindBuffer(gl.ARRAY_BUFFER, positionBuffer);
   setGeometry(gl, QUAD_FIGURE_3D);
+  // customSphere = makeSphere(200, 10, 10);
+  // gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(customSphere.position), gl.STATIC_DRAW);
 
   initInteraction(gl.canvas);
 }
 
-
-function randomInt(value){
-  if(typeof value === 'number' && value > 0){
-      return Math.random()*value;
-  }
-  return 0;
-}
 
 /**
  * render one frame
@@ -94,7 +94,8 @@ function render(timeInMilliseconds) {
   gl.useProgram(program);
 
   gl.uniform2f(resolutionUniformLocation, gl.canvas.width, gl.canvas.height);
-  gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
+  // gl.uniform4f(colorUniformLocation, Math.random(), Math.random(), Math.random(), 1);
+  gl.uniform4f(colorUniformLocation, 0.8, 0.5, 0.3, 1);
 
   gl.enableVertexAttribArray(positionAttLocation);
 
@@ -120,45 +121,39 @@ function render(timeInMilliseconds) {
   var numFs = 5;
   var radius = 200;
 
-  mat4.fromYRotation(camera, glMatrix.toRadian(radius));
-  mat4.translate(camera, camera, [0,0, radius * 1.5]);
+  // timeInMilliseconds *= 0.001;
+  var deltaTime = timeInMilliseconds - rotationTimer;
+
+  rotationTimer = timeInMilliseconds;
+  rotation[1] += (0.1 * deltaTime);
+  mat4.fromYRotation(camera, glMatrix.toRadian(rotation[1]));
+  mat4.translate(camera, camera, [0,0, 1500]);
   var viewMatrix = mat4.create();
 
   mat4.invert(viewMatrix, camera);
 
-  mat4.perspective(matrix, glMatrix.toRadian(45), aspect, 1, 2000);
-
+  // mat4.rotateX(matrix, matrix, glMatrix.toRadian(rotation[1]));
+  // console.log('Modellmatrix: ' + matrix);
   mat4.translate(matrix, matrix, [translation[0], translation[1], translation[2]]);
+  var perspectiveMatrix = mat4.create();
+  mat4.perspective(perspectiveMatrix, glMatrix.toRadian(30), aspect, zNear, zFar);
+  mat4.multiply(matrix, matrix, perspectiveMatrix);
+
   var viewProjectionMatrix = mat4.create();
 
   mat4.multiply(viewProjectionMatrix, matrix, viewMatrix);
-  //
-  // var depth = 400;
-  // var orthographicMatrix = mat4.create();
-  //
-  // mat4.ortho(orthographicMatrix, 0, gl.canvas.clientWidth, gl.canvas.clientHeight, 0, -400, 400);
-  //
-  // mat4.multiply(matrix, matrix, orthographicMatrix);
 
-  // mat4.rotateX(matrix, matrix, glMatrix.toRadian(rotation[0]));
-  // mat4.rotateY(matrix, matrix, glMatrix.toRadian(rotation[1]));
-  // mat4.rotateZ(matrix, matrix, glMatrix.toRadian(rotation[2]));
-  // mat4.translate(matrix, matrix, [-50, -50, -50]);
-  for(var ii = 0; ii < numFs; ii++){
-    var angle = ii * Math.PI * 2 / numFs;
-    var x = Math.cos(angle) * radius;
-    var y = Math.sin(angle) * radius;
-
-    mat4.translate(matrix, viewProjectionMatrix, [x, 0, y]);
-
-    gl.uniformMatrix4fv(matrixUniformLocation, false, matrix);
-    count = 6;
-    for(var i = 0; i < 6; i++){
-      gl.uniform1f(fudgeFactorUniformLocation, fudgeFactor);
-      gl.uniform4f(colorUniformLocation, cubeColorMatrix[i][0], cubeColorMatrix[i][1], cubeColorMatrix[i][2], cubeColorMatrix[i][3]);
-      gl.drawArrays(primitiveType, offset + (i * count), count);
-    }
+  gl.uniformMatrix4fv(matrixUniformLocation, false, viewProjectionMatrix);
+  count = 6;
+  for(var i = 0; i < 6; i++){
+    gl.uniform1f(fudgeFactorUniformLocation, fudgeFactor);
+    gl.uniform4f(colorUniformLocation, cubeColorMatrix[i][0], cubeColorMatrix[i][1], cubeColorMatrix[i][2], cubeColorMatrix[i][3]);
+    gl.drawArrays(primitiveType, offset + (i * count), count);
   }
+
+  // gl.drawArrays(primitiveType, 0, customSphere.position.length / 3);
+
+  requestAnimationFrame(render);
 }
 
 
