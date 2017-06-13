@@ -25,7 +25,7 @@ var scale = [0.8, 0.8, 1];
 var matrix;
 var zNear = 0.01, zFar = 600;
 var fudgeFactor = 1;
-var zoom = 0.0;
+var zoom = -20;
 var camera = {
   rotation: {
     x: 0,
@@ -97,22 +97,21 @@ function render(timeInMilliseconds) {
   //clear the buffer
   gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 
-  // gl.useProgram(program);
-
   const sceneGraph_context = createSGContext(gl);
 
   //Creating and setting projectionMatrix (thats the Fulcrum-look-alike cone defining at what point objects are being cut off)
   sceneGraph_context.projectionMatrix = mat4.perspective(mat4.create(), glMatrix.toRadian(45), gl.drawingBufferWidth / gl.drawingBufferHeight, zNear, zFar);
 
   //creating and setting viewMatrix (basically thats the direction we want to look)
-  sceneGraph_context.viewMatrix = mat4.lookAt(mat4.create(), [0,1,-10], [0,0,0], [0,1,0]);
+  sceneGraph_context.viewMatrix = mat4.lookAt(mat4.create(), [0,10, zoom/100], [0,5,0], [0,1,0]);
 
 
   var cameraMatrix = mat4.create();
   mat4.multiply(cameraMatrix, glm.rotateY(camera.rotation.x), glm.rotateX(camera.rotation.y));
-  mat4.translate(cameraMatrix, cameraMatrix, [0,0,zoom/100]);
+  // mat4.translate(cameraMatrix, cameraMatrix, [0,0,zoom/100]);
   sceneGraph_context.sceneMatrix = cameraMatrix;
 
+  rotateBarrenPlanetLight.matrix = glm.rotateY(timeInMilliseconds*0.05);
 
   sceneGraph_root.render(sceneGraph_context);
   // gl.drawArrays(primitiveType, 0, customSphere.position.length / 3);
@@ -141,7 +140,6 @@ function initInteraction(canvas) {
   canvas.addEventListener('mousemove', function(event) {
     const pos = toPos(event);
     const delta = { x : mouse.pos.x - pos.x, y: mouse.pos.y - pos.y };
-    //TASK 0-1 add delta mouse to camera.rotation if the left mouse button is pressed
     if (mouse.leftButtonDown) {
       //add the relative movement of the mouse to the rotation variables
   		camera.rotation.x += delta.x;

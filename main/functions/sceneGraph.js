@@ -1,5 +1,6 @@
 var rotateLight,
     rotateLight2,
+    rotateBarrenPlanetLight,
     rotateNode;
 
 function createSceneGraph(gl, resources) {
@@ -13,56 +14,6 @@ function createSceneGraph(gl, resources) {
   }
 
   {
-    //TASK 3-6 create white light node at [0, -2, 2]
-    let light = new LightNode();
-    light.ambient = [0, 0, 0, 1];
-    light.diffuse = [1, 1, 1, 1];
-    light.specular = [1, 1, 1, 1];
-    light.position = [0, 2, 2];
-    light.append(createLightSphere());
-    //TASK 4-1 animated light using rotateLight transformation node
-    rotateLight = new TransformationSGNode(mat4.create(), [
-        light
-    ]);
-    root.append(rotateLight);
-  }
-
-
-  {
-    //TASK 5-1 create red light node at [2, 0.2, 0]
-    let light2 = new LightNode();
-    light2.uniform = 'u_light2';
-    light2.diffuse = [1, 0, 0, 1];
-    light2.specular = [1, 0, 0, 1];
-    light2.position = [2, -0.5, 0];
-    light2.append(createLightSphere());
-    rotateLight2 = new TransformationSGNode(mat4.create(), [
-        light2
-    ]);
-    root.append(rotateLight2);
-  }
-
-  // {
-  //   //TASK 2-4 wrap with material node
-  //   let c3po = new MaterialNode([
-  //     new RenderSGNode(resources.model)
-  //   ]);
-  //   //gold
-  //   c3po.ambient = [0.24725, 0.1995, 0.0745, 1];
-  //   c3po.diffuse = [0.75164, 0.60648, 0.22648, 1];
-  //   c3po.specular = [0.628281, 0.555802, 0.366065, 1];
-  //   c3po.shininess = 0.4;
-  //
-  //   rotateNode = new TransformationSGNode(mat4.create(), [
-  //     new TransformationSGNode(glm.translate(0,-1.5, 0),  [
-  //       c3po
-  //     ])
-  //   ]);
-  //   root.append(rotateNode);
-  // }
-
-  {
-    //TASK 2-5 wrap with material node
     let floor = new MaterialNode([
       new RenderSGNode(makeRect(2, 2))
     ]);
@@ -73,9 +24,36 @@ function createSceneGraph(gl, resources) {
     floor.specular = [0.5, 0.5, 0.5, 1];
     floor.shininess = 0.7;
 
-    root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5,0], rotateX: -90, scale: 3}), [
+    root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5,0], rotateX: -90, scale: 10}), [
       floor
     ]));
+  }
+
+
+  {
+    let barrenPlanet = new MaterialNode([
+      new RenderSGNode(makeSphere(1, 10, 10))
+    ]);
+
+      //chocolate color
+      barrenPlanet.ambient = [0.823529, 0.411765, 0.117647, 1];
+      barrenPlanet.diffuse = [0.1, 0.1, 0.1, 1];
+      barrenPlanet.specular = [0.5, 0.9, 0.5, 1];
+      barrenPlanet.shininess = 0.6;
+
+      let barrenPlanetLightNode = new LightNode();
+      barrenPlanetLightNode.ambient = [1, 0.843137, 0, 1];
+      barrenPlanetLightNode.diffuse = [1, 1, 1, 1];
+      barrenPlanetLightNode.specular = [1, 1, 1, 1];
+      barrenPlanetLightNode.position = [0, 2, 2];
+      barrenPlanetLightNode.append(createLightSphere());
+      rotateBarrenPlanetLight = new TransformationSGNode(mat4.create(), barrenPlanetLightNode);
+
+      barrenPlanet.append(rotateBarrenPlanetLight);
+
+      root.append(new TransformationSGNode(glm.transform({translate: [-4, 3, 0,], rotateY: 90, scale: 4}),
+        [barrenPlanet]
+      ));
   }
 
   return root;
@@ -148,7 +126,6 @@ class LightNode extends TransformationSGNode {
       shader = context.shader,
       position = this.computeLightPosition(context);
 
-    //TASK 3-5 set uniforms
     gl.uniform4fv(gl.getUniformLocation(shader, this.uniform+'.ambient'), this.ambient);
     gl.uniform4fv(gl.getUniformLocation(shader, this.uniform+'.diffuse'), this.diffuse);
     gl.uniform4fv(gl.getUniformLocation(shader, this.uniform+'.specular'), this.specular);
