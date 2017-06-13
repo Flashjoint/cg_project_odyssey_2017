@@ -1,5 +1,6 @@
 var rotateLight,
     rotateLight2,
+    rotateBarrenPlanetNode,
     rotateBarrenPlanetLight,
     rotateJupiterCNode;
 
@@ -9,13 +10,13 @@ function createSceneGraph(gl, resources) {
 
   function createLightSphere() {
     return new ShaderSGNode(createProgram(gl, resources.single_vs, resources.single_fs), [
-      new RenderSGNode(makeSphere(.2,10,10))
+      new RenderSGNode(makeSphere(.4,30,30))
     ]);
   }
 
   {
     let floor = new MaterialNode([
-      new RenderSGNode(makeRect(2, 2))
+      new RenderSGNode(makeRect(4, 4))
     ]);
 
     //dark
@@ -24,55 +25,149 @@ function createSceneGraph(gl, resources) {
     floor.specular = [0.5, 0.5, 0.5, 1];
     floor.shininess = 0.7;
 
-    root.append(new TransformationSGNode(glm.transform({ translate: [0, -1.5,0], rotateX: -90, scale: 10}), [
+    root.append(new TransformationSGNode(glm.transform({ translate: [0, 0,0], rotateX: -90, scale: 10}), [
       floor
     ]));
   }
 
+  {
+    let front = new MaterialNode([
+      new RenderSGNode(makeRect(4, 4))
+    ]);
+
+    //dark
+    front.ambient = [0, 0, 0, 1];
+    front.diffuse = [0.1, 0.1, 0.1, 1];
+    front.specular = [0.5, 0.5, 0.5, 1];
+    front.shininess = 0.7;
+
+    root.append(new TransformationSGNode(glm.transform({ translate: [0, 40, 40], rotateX: 0, scale: 10}), [
+      front
+    ]));
+  }
+
+  {
+    let back = new MaterialNode([
+      new RenderSGNode(makeRect(4, 4))
+    ]);
+
+    //dark
+    back.ambient = [0, 0, 0, 1];
+    back.diffuse = [0.1, 0.1, 0.1, 1];
+    back.specular = [0.5, 0.5, 0.5, 1];
+    back.shininess = 0.7;
+
+    root.append(new TransformationSGNode(glm.transform({ translate: [0, 40, -40], rotateX: 0, scale: 10}), [
+      back
+    ]));
+  }
+
+  {
+    let left = new MaterialNode([
+      new RenderSGNode(makeRect(4, 4))
+    ]);
+
+    //dark
+    left.ambient = [0, 0, 0, 1];
+    left.diffuse = [0.1, 0.1, 0.1, 1];
+    left.specular = [0.5, 0.5, 0.5, 1];
+    left.shininess = 0.7;
+
+    root.append(new TransformationSGNode(glm.transform({ translate: [40, 40, 0], rotateY: 90, scale: 10}), [
+      left
+    ]));
+  }
+
+  {
+    let right = new MaterialNode([
+      new RenderSGNode(makeRect(4, 4))
+    ]);
+
+    //dark
+    right.ambient = [0, 0, 0, 1];
+    right.diffuse = [0.1, 0.1, 0.1, 1];
+    right.specular = [0.5, 0.5, 0.5, 1];
+    right.shininess = 0.7;
+
+    root.append(new TransformationSGNode(glm.transform({ translate: [-40, 40, 0], rotateY: 90, scale: 10}), [
+      right
+    ]));
+  }
+
+  {
+    let ceiling = new MaterialNode([
+      new RenderSGNode(makeRect(4, 4))
+    ]);
+
+    //dark
+    ceiling.ambient = [0, 0, 0, 1];
+    ceiling.diffuse = [0.1, 0.1, 0.1, 1];
+    ceiling.specular = [0.5, 0.5, 0.5, 1];
+    ceiling.shininess = 0.7;
+
+    root.append(new TransformationSGNode(glm.transform({ translate: [0, 40, 0], rotateX: -90, scale: 10}), [
+      ceiling
+    ]));
+  }
+
+
 
   {
     let barrenPlanet = new MaterialNode([
-      new RenderSGNode(makeSphere(1, 10, 10))
+      new RenderSGNode(makeSphere(0.1, 30, 30))
     ]);
+
+      let barrenPlanetLightNode = new LightNode();
+      barrenPlanetLightNode.ambient = [1, 0.843137, 0, 1];
+      barrenPlanetLightNode.diffuse = [0.1, 0.1, 0.1, 1];
+      barrenPlanetLightNode.specular = [1, 1, 1, 1];
+      barrenPlanetLightNode.position = [0, 0, 0];
+      barrenPlanetLightNode.append(createLightSphere());
 
       //chocolate color
       barrenPlanet.ambient = [0.823529, 0.411765, 0.117647, 1];
       barrenPlanet.diffuse = [0.1, 0.1, 0.1, 1];
       barrenPlanet.specular = [0.5, 0.9, 0.5, 1];
+      barrenPlanet.position = [0, 0, 0];
       barrenPlanet.shininess = 0.6;
 
-      let barrenPlanetLightNode = new LightNode();
-      barrenPlanetLightNode.ambient = [1, 0.843137, 0, 1];
-      barrenPlanetLightNode.diffuse = [1, 1, 1, 1];
-      barrenPlanetLightNode.specular = [1, 1, 1, 1];
-      barrenPlanetLightNode.position = [0, 2, 2];
-      barrenPlanetLightNode.append(createLightSphere());
-      rotateBarrenPlanetLight = new TransformationSGNode(mat4.create(), barrenPlanetLightNode);
+      rotateBarrenPlanetNode = new TransformationSGNode(
+        mat4.create(),
+        [new TransformationSGNode(glm.transform(
+          {
+            translate: [1, 0, 0],
+            rotateX: 0,
+            scale: 1
+          }
+        ),
+        [barrenPlanet])
+      ]);
 
-      barrenPlanet.append(rotateBarrenPlanetLight);
+      barrenPlanetLightNode.append(rotateBarrenPlanetNode)
 
-        // create jupiter-c node
-        let jupiter_c_material = new MaterialNode([
-          new RenderSGNode(resources.jupiter_c)
-        ]);
-        jupiter_c_material.ambient = [0, 0, 0, 1];
-        jupiter_c_material.diffuse = [1, 1, 1, 1];
-        jupiter_c_material.specular = [1, 1, 1, 1];
-        jupiter_c_material.position = [0, 0, 0];
-        rotateJupiterCNode = new TransformationSGNode(mat4.create(), [
-          new TransformationSGNode(glm.transform(
-            {
-              translate: [3, 0, 0],
-              rotateX: -90,
-              scale: 0.1
-            }
-          ),
-            [jupiter_c_material])
-        ]);
-        barrenPlanet.append(rotateJupiterCNode);
 
-      root.append(new TransformationSGNode(glm.transform({translate: [-4, 3, 0,], rotateY: 90, scale: 4}),
-        [barrenPlanet]
+      // create jupiter-c node
+      let jupiter_c_material = new MaterialNode([
+        new RenderSGNode(resources.jupiter_c)
+      ]);
+      jupiter_c_material.ambient = [0, 0, 0, 1];
+      jupiter_c_material.diffuse = [1, 1, 1, 1];
+      jupiter_c_material.specular = [1, 1, 1, 1];
+      jupiter_c_material.position = [0, 0, 0];
+      rotateJupiterCNode = new TransformationSGNode(mat4.create(), [
+        new TransformationSGNode(glm.transform(
+          {
+            translate: [0.2, 0, 0],
+            rotateX: -90,
+            scale: 0.025
+          }
+        ),
+          [jupiter_c_material])
+      ]);
+      barrenPlanet.append(rotateJupiterCNode);
+
+      root.append(new TransformationSGNode(glm.transform({translate: [0, 15, 0,], rotateY: 0, scale: 20}),
+        [barrenPlanetLightNode]
       ));
   }
 

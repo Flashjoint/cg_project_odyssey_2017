@@ -99,11 +99,11 @@ function render(timeInMilliseconds) {
 
   const sceneGraph_context = createSGContext(gl);
 
-  //Creating and setting projectionMatrix (thats the Fulcrum-look-alike cone defining at what point objects are being cut off)
+  //Creating and setting projectionMatrix (thats the fulcrum-look-a-like cone defining at what point objects are being cut off)
   sceneGraph_context.projectionMatrix = mat4.perspective(mat4.create(), glMatrix.toRadian(45), gl.drawingBufferWidth / gl.drawingBufferHeight, zNear, zFar);
 
-  //creating and setting viewMatrix (basically thats the direction we want to look)
-  sceneGraph_context.viewMatrix = mat4.lookAt(mat4.create(), [0,10, zoom/100], [0,5,0], [0,1,0]);
+  //creating and setting viewMatrix (basically thats the direction we want to look at)
+  sceneGraph_context.viewMatrix = mat4.lookAt(mat4.create(), [0,10, zoom/100], [0,15,0], [0,1,1]);
 
 
   var cameraMatrix = mat4.create();
@@ -111,7 +111,7 @@ function render(timeInMilliseconds) {
   // mat4.translate(cameraMatrix, cameraMatrix, [0,0,zoom/100]);
   sceneGraph_context.sceneMatrix = cameraMatrix;
 
-  rotateBarrenPlanetLight.matrix = glm.rotateY(timeInMilliseconds*0.05);
+  rotateBarrenPlanetNode.matrix = glm.rotateY(timeInMilliseconds*0.05);
   rotateJupiterCNode.matrix = glm.rotateY(timeInMilliseconds*0.05);
 
   sceneGraph_root.render(sceneGraph_context);
