@@ -1,7 +1,7 @@
 var rotateLight,
     rotateLight2,
     rotateBarrenPlanetLight,
-    rotateNode;
+    rotateJupiterCNode;
 
 function createSceneGraph(gl, resources) {
   //create scenegraph
@@ -50,6 +50,26 @@ function createSceneGraph(gl, resources) {
       rotateBarrenPlanetLight = new TransformationSGNode(mat4.create(), barrenPlanetLightNode);
 
       barrenPlanet.append(rotateBarrenPlanetLight);
+
+        // create jupiter-c node
+        let jupiter_c_material = new MaterialNode([
+          new RenderSGNode(resources.jupiter_c)
+        ]);
+        jupiter_c_material.ambient = [0, 0, 0, 1];
+        jupiter_c_material.diffuse = [1, 1, 1, 1];
+        jupiter_c_material.specular = [1, 1, 1, 1];
+        jupiter_c_material.position = [0, 0, 0];
+        rotateJupiterCNode = new TransformationSGNode(mat4.create(), [
+          new TransformationSGNode(glm.transform(
+            {
+              translate: [3, 0, 0],
+              rotateX: -90,
+              scale: 0.1
+            }
+          ),
+            [jupiter_c_material])
+        ]);
+        barrenPlanet.append(rotateJupiterCNode);
 
       root.append(new TransformationSGNode(glm.transform({translate: [-4, 3, 0,], rotateY: 90, scale: 4}),
         [barrenPlanet]

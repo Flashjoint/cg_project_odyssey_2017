@@ -25,7 +25,7 @@ var scale = [0.8, 0.8, 1];
 var matrix;
 var zNear = 0.01, zFar = 600;
 var fudgeFactor = 1;
-var zoom = -20;
+var zoom = -50;
 var camera = {
   rotation: {
     x: 0,
@@ -112,6 +112,7 @@ function render(timeInMilliseconds) {
   sceneGraph_context.sceneMatrix = cameraMatrix;
 
   rotateBarrenPlanetLight.matrix = glm.rotateY(timeInMilliseconds*0.05);
+  rotateJupiterCNode.matrix = glm.rotateY(timeInMilliseconds*0.05);
 
   sceneGraph_root.render(sceneGraph_context);
   // gl.drawArrays(primitiveType, 0, customSphere.position.length / 3);
